@@ -138,7 +138,7 @@ func _on_shrink_button_pressed() -> void:
   for y in range(h):
     for x in range(w - 1):
       var col: Vector3i
-      if x < seam[y]:
+      if x <= seam[y]:
         col = get_color_pixel(x, y, w, color_pixels)
       else:
         col = get_color_pixel(x + 1, y, w, color_pixels)
@@ -147,10 +147,25 @@ func _on_shrink_button_pressed() -> void:
       new_img[idx + 1] = col.y
       new_img[idx + 2] = col.z
 
+  var debug: PackedByteArray = PackedByteArray()
+  debug.resize(w*h)
+  var max_val: float = Array(diff_vals).max()
+  for x in range(w):
+    for y in range(h):
+      var i: int = get_pindex(x, y, w)
+      if x == seam[y]:
+        debug[i] = 255
+      else:
+        debug[i] = diff_vals[i] * 255 / max_val
+
 
   var img: Image = Image.create_from_data(w - 1, h, false, Image.Format.FORMAT_RGB8, new_img)
   var itex: ImageTexture = ImageTexture.create_from_image(img)  
   $GridContainer/ImageDisplay.texture = itex
+
+  var d: Image = Image.create_from_data(w, h, false, Image.Format.FORMAT_L8, debug)
+  var dtex: ImageTexture = ImageTexture.create_from_image(d)  
+  $GridContainer/DebugDisplay.texture = dtex
 
 func _on_grow_button_pressed() -> void:
     pass # Replace with function body.
