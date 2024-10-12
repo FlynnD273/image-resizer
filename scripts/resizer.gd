@@ -1,5 +1,7 @@
 extends Control
 
+@export var is_debug = false
+
 var original: CompressedTexture2D
 var rd: RenderingDevice
 var shader: RID
@@ -10,6 +12,10 @@ func _ready() -> void:
   var shader_file := load("res://gen_grad.comp.glsl")
   var shader_spirv: RDShaderSPIRV = shader_file.get_spirv()
   shader = rd.shader_create_from_spirv(shader_spirv)
+
+  if not is_debug:
+    $GridContainer.columns = 1
+    $GridContainer/DebugDisplay.hide()
 
 func _on_open_button_pressed() -> void:
   var f := FileDialog.new()
@@ -57,9 +63,6 @@ func _on_shrink_button_pressed() -> void:
   var diff_vals: PackedFloat32Array = PackedFloat32Array()
   diff_vals.resize(w)
 
-  # for x in range(w):
-  #   diff_vals[x] = get_pixel(x, 0, w, grey_pix)
-
   for y in range(h - 1):
     var input_bytes := diff_vals.slice(y * w, (y + 1) * w).to_byte_array()
     var temp := PackedFloat32Array()
@@ -103,7 +106,7 @@ func _on_shrink_button_pressed() -> void:
     var output := output_bytes.to_float32_array()
     diff_vals.append_array(output)
 
-  var seam: Array[int] = []
+  var seam: PackedInt32Array = PackedInt32Array()
   seam.resize(h)
   var min_val: float = get_val(0, h - 1, w, diff_vals)
   var min_x: int = 0
@@ -118,12 +121,13 @@ func _on_shrink_button_pressed() -> void:
   for y in range(h - 2, -1, -1):
     var x: int = seam[y + 1]
     var middle: float = get_val(x, y - 1, w, diff_vals)
-    var left: float = middle
+    var left: float = middle + 1
     if x != 0:
       left = get_val(x - 1, y - 1, w, diff_vals)
-    var right: float = middle
+    var right: float = middle + 1
     if x != w - 1:
       right = get_val(x + 1, y - 1, w, diff_vals)
+
     min_val = min(left, middle, right)
 
     if min_val == left:
@@ -134,38 +138,43 @@ func _on_shrink_button_pressed() -> void:
       seam[y] = x + 1
 
   var new_img: PackedByteArray = PackedByteArray()
-  new_img.resize((w - 1)*h * 3)
   for y in range(h):
-    for x in range(w - 1):
-      var col: Vector3i
-      if x <= seam[y]:
-        col = get_color_pixel(x, y, w, color_pixels)
-      else:
-        col = get_color_pixel(x + 1, y, w, color_pixels)
-      var idx: int = get_pindex(x, y, w - 1) * 3
-      new_img[idx] = col.x
-      new_img[idx + 1] = col.y
-      new_img[idx + 2] = col.z
+    if seam[y] == 0:
+      print("left")
+    var start := y * w
+    var seam_idx := start + seam[y]
+    var end := start + w
+    var prev_size = new_img.size()
+    if seam_idx == start:
+      new_img.append_array(color_pixels.slice((start + 1) * 3, end * 3))
+    elif seam_idx == end - 1:
+      new_img.append_array(color_pixels.slice(start * 3, (end - 1) * 3))
+    else:
+      new_img.append_array(color_pixels.slice(start * 3, (seam_idx + 1) * 3))
+      new_img.append_array(color_pixels.slice((seam_idx + 2) * 3, end * 3))
 
-  var debug: PackedByteArray = PackedByteArray()
-  debug.resize(w*h)
-  var max_val: float = Array(diff_vals).max()
-  for x in range(w):
-    for y in range(h):
-      var i: int = get_pindex(x, y, w)
-      if x == seam[y]:
-        debug[i] = 255
-      else:
-        debug[i] = diff_vals[i] * 255 / max_val
+    assert(new_img.size() - prev_size == w * 3 - 3)
+
+  if is_debug:
+    var debug: PackedByteArray = PackedByteArray()
+    debug.resize(w*h)
+    var max_val: float = Array(diff_vals).max()
+    for x in range(w):
+      for y in range(h):
+        var i: int = get_pindex(x, y, w)
+        if x == seam[y]:
+          debug[i] = 255
+        else:
+          debug[i] = diff_vals[i] * 255 / max_val
+
+    var d: Image = Image.create_from_data(w, h, false, Image.Format.FORMAT_L8, debug)
+    var dtex: ImageTexture = ImageTexture.create_from_image(d)  
+    $GridContainer/DebugDisplay.texture = dtex
 
 
   var img: Image = Image.create_from_data(w - 1, h, false, Image.Format.FORMAT_RGB8, new_img)
   var itex: ImageTexture = ImageTexture.create_from_image(img)  
   $GridContainer/ImageDisplay.texture = itex
-
-  var d: Image = Image.create_from_data(w, h, false, Image.Format.FORMAT_L8, debug)
-  var dtex: ImageTexture = ImageTexture.create_from_image(d)  
-  $GridContainer/DebugDisplay.texture = dtex
 
 func _on_grow_button_pressed() -> void:
     pass # Replace with function body.
