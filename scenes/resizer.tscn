@@ -47,16 +47,8 @@ anchor_bottom = 1.0
 offset_top = 62.0
 grow_horizontal = 2
 grow_vertical = 2
-columns = 2
 
 [node name="ImageDisplay" type="TextureRect" parent="GridContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-expand_mode = 1
-stretch_mode = 5
-
-[node name="DebugDisplay" type="TextureRect" parent="GridContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3

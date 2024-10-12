@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://3oh5mj7jpy3q"
+path="res://.godot/imported/gen_grad.comp.glsl-3e787ca0b5f7363f5845c60e8126dbfb.res"
+
+[deps]
+
+source_file="res://gen_grad.comp.glsl"
+dest_files=["res://.godot/imported/gen_grad.comp.glsl-3e787ca0b5f7363f5845c60e8126dbfb.res"]
+
+[params]
+
