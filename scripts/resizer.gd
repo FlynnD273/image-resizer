@@ -3,7 +3,7 @@ extends Control
 var original: CompressedTexture2D
 
 func _ready() -> void:
-  _file_open_selected("/home/flynn/image-resizer/kirby_small.png")
+  _file_open_selected("./kirby_small.png")
 
 func _on_open_button_pressed() -> void:
   var f := FileDialog.new()
