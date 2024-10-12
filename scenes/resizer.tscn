@@ -1,0 +1,69 @@
+[gd_scene load_steps=3 format=3 uid="uid://bm2itsapelcbh"]
+
+[ext_resource type="Script" path="res://scripts/resizer.gd" id="1_3ialw"]
+
+[sub_resource type="Theme" id="Theme_kuyg7"]
+default_font_size = 28
+
+[node name="Resizer" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_kuyg7")
+script = ExtResource("1_3ialw")
+
+[node name="Toolbar" type="HFlowContainer" parent="."]
+layout_mode = 2
+offset_right = 1156.0
+offset_bottom = 98.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 0
+
+[node name="OpenButton" type="Button" parent="Toolbar"]
+layout_mode = 2
+text = "Open Image..."
+
+[node name="SaveButton" type="Button" parent="Toolbar"]
+layout_mode = 2
+text = "Save As..."
+
+[node name="ShrinkButton" type="Button" parent="Toolbar"]
+layout_mode = 2
+text = "-"
+
+[node name="GrowButton" type="Button" parent="Toolbar"]
+layout_mode = 2
+text = "+"
+
+[node name="GridContainer" type="GridContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 62.0
+grow_horizontal = 2
+grow_vertical = 2
+columns = 2
+
+[node name="ImageDisplay" type="TextureRect" parent="GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+
+[node name="DebugDisplay" type="TextureRect" parent="GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+
+[connection signal="pressed" from="Toolbar/OpenButton" to="." method="_on_open_button_pressed"]
+[connection signal="pressed" from="Toolbar/SaveButton" to="." method="_on_save_button_pressed"]
+[connection signal="pressed" from="Toolbar/ShrinkButton" to="." method="_on_shrink_button_pressed"]
+[connection signal="pressed" from="Toolbar/GrowButton" to="." method="_on_grow_button_pressed"]
