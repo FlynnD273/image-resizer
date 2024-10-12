@@ -33,11 +33,8 @@ func get_pindex(x: int, y: int, w: int) -> int:
 func get_pixel(x: int, y: int, w: int, pixels: PackedByteArray) -> int:
   return pixels[get_pindex(x, y, w)]
 
-func get_2byte(x: int, y: int, w: int, pixels: PackedByteArray) -> int:
-  var val: int = 0
-  val += pixels[get_pindex(x, y, w) * 2] << 8
-  val += pixels[get_pindex(x, y, w) * 2 + 1]
-  return val
+func get_val(x: int, y: int, w: int, pixels: PackedFloat32Array) -> float:
+  return pixels[get_pindex(x, y, w)]
 
 func get_color_pixel(x, y, w, pixels: PackedByteArray) -> Vector3i:
   return Vector3i(pixels[get_pindex(x, y, w) * 3], pixels[get_pindex(x, y, w) * 3 + 1], pixels[get_pindex(x, y, w) * 3 + 2])
@@ -51,43 +48,41 @@ func _on_shrink_button_pressed() -> void:
   var pix := grey.get_data()
   var h: int = grey.get_height()
   var w: int = grey.get_width()
-  var diff_vals: PackedByteArray = PackedByteArray()
-  diff_vals.resize(w*h*2)
+  var diff_vals: PackedFloat32Array = PackedFloat32Array()
+  diff_vals.resize(w*h)
 
-  var max_val: int = 0
+  var max_val: float = 0
   for y in range(h):
     for x in range(w):
       if y == 0:
         var pxl: int = get_pixel(x, y, w, pix)
-        diff_vals[get_pindex(x, y, w) * 2] = (pxl >> 8) & 0xFF
-        diff_vals[get_pindex(x, y, w) * 2 + 1] = pxl & 0xFF
+        diff_vals[get_pindex(x, y, w)] = pxl
         if max_val < pxl:
           max_val = pxl
         continue
 
-      var curr: int = get_pixel(x, y, w, pix)
-      var left: int = 1024
-      var middle: int = 1024
-      var right: int = 1024
+      var curr: float = get_pixel(x, y, w, pix)
+      var left: float = 1024
+      var middle: float = 1024
+      var right: float = 1024
 
       if x != 0:
-        left = get_2byte(x - 1, y-1, w, diff_vals) + abs(curr - get_pixel(x - 1, y - 1, w, pix))
+        left = get_val(x - 1, y-1, w, diff_vals) + abs(curr - get_pixel(x - 1, y - 1, w, pix))
       if x != w - 1:
-        right = get_2byte(x + 1, y-1, w, diff_vals) + abs(curr - get_pixel(x + 1, y - 1, w, pix))
-      middle = get_2byte(x, y-1, w, diff_vals) + abs(curr - get_pixel(x, y - 1, w, pix))
+        right = get_val(x + 1, y-1, w, diff_vals) + abs(curr - get_pixel(x + 1, y - 1, w, pix))
+      middle = get_val(x, y-1, w, diff_vals) + abs(curr - get_pixel(x, y - 1, w, pix))
 
-      var min_diff: int = min(left, middle, right)
-      diff_vals[get_pindex(x, y, w) * 2] = (min_diff >> 8) & 0xFF
-      diff_vals[get_pindex(x, y, w) * 2 + 1] = min_diff & 0xFF
+      var min_diff: float = min(left, middle, right)
+      diff_vals[get_pindex(x, y, w)] = min_diff
       if max_val < min_diff:
         max_val = min_diff
 
   var seam: Array[int] = []
   seam.resize(h)
-  var min_val: int = get_2byte(0, h - 1, w, diff_vals)
+  var min_val: float = get_val(0, h - 1, w, diff_vals)
   var min_x: int = 0
   for x in range(1, w):
-    var val: int = get_2byte(x, h - 1, w, diff_vals)
+    var val: float = get_val(x, h - 1, w, diff_vals)
     if val < min_val:
       min_val = val
       min_x = x
@@ -96,13 +91,13 @@ func _on_shrink_button_pressed() -> void:
 
   for y in range(h - 2, -1, -1):
     var x: int = seam[y + 1]
-    var left: int = 0xFFFF
+    var middle: float = get_val(x, y - 1, w, diff_vals)
+    var left: float = middle
     if x != 0:
-      left = get_2byte(x - 1, y - 1, w, diff_vals)
-    var middle: int = get_2byte(x, y - 1, w, diff_vals)
-    var right: int = 0xFFFF
+      left = get_val(x - 1, y - 1, w, diff_vals)
+    var right: float = middle
     if x != w - 1:
-      right = get_2byte(x + 1, y - 1, w, diff_vals)
+      right = get_val(x + 1, y - 1, w, diff_vals)
     min_val = min(left, middle, right)
 
     if min_val == left:
@@ -130,13 +125,12 @@ func _on_shrink_button_pressed() -> void:
   debug.resize(w*h)
   for x in range(w):
     for y in range(h):
-      var val: int = 0
       var i: int = get_pindex(x, y, w)
-      val += diff_vals[i * 2] << 8
-      val += diff_vals[i * 2 + 1]
-      debug[i] = val * 255 / max_val
       if x == seam[y]:
         debug[i] = 255
+      else:
+        debug[i] = diff_vals[i] * 255 / max_val
+
 
   var img: Image = Image.create_from_data(w - 1, h, false, Image.Format.FORMAT_RGB8, new_img)
   var itex: ImageTexture = ImageTexture.create_from_image(img)  
