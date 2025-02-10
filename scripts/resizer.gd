@@ -6,6 +6,7 @@ var original: CompressedTexture2D
 var rd: RenderingDevice
 var shader: RID
 
+
 func _ready() -> void:
   _file_open_selected("./kirby_small.png")
   rd = RenderingServer.create_local_rendering_device()
@@ -17,6 +18,7 @@ func _ready() -> void:
     $GridContainer.columns = 1
     $GridContainer/DebugDisplay.hide()
 
+
 func _on_open_button_pressed() -> void:
   var f := FileDialog.new()
   f.file_mode = FileDialog.FILE_MODE_OPEN_FILE
@@ -24,9 +26,11 @@ func _on_open_button_pressed() -> void:
   f.popup()
   f.file_selected.connect(_file_open_selected)
 
+
 func _file_open_selected(path: String) -> void:
   original = load(path)
   $GridContainer/ImageDisplay.texture = original
+
 
 func _on_save_button_pressed() -> void:
   var f := FileDialog.new()
@@ -36,25 +40,38 @@ func _on_save_button_pressed() -> void:
   f.popup()
   f.file_selected.connect(_file_save_selected)
 
+
 func _file_save_selected(path: String) -> void:
   $GridContainer/ImageDisplay.texture.get_image().save_png(path)
+
 
 func get_pindex(x: int, y: int, w: int) -> int:
   return x + y * w
 
+
 func get_pixel(x: int, y: int, w: int, pixels: PackedByteArray) -> int:
   return pixels[get_pindex(x, y, w)]
+
 
 func get_val(x: int, y: int, w: int, pixels: PackedFloat32Array) -> float:
   return pixels[get_pindex(x, y, w)]
 
+
 func get_color_pixel(x, y, w, pixels: PackedByteArray) -> Vector3i:
-  return Vector3i(pixels[get_pindex(x, y, w) * 3], pixels[get_pindex(x, y, w) * 3 + 1], pixels[get_pindex(x, y, w) * 3 + 2])
+  return Vector3i(
+    pixels[get_pindex(x, y, w) * 3],
+    pixels[get_pindex(x, y, w) * 3 + 1],
+    pixels[get_pindex(x, y, w) * 3 + 2]
+  )
+
 
 func _on_shrink_button_pressed() -> void:
+  var start_time := Time.get_ticks_msec()
   var color: Image = $GridContainer/ImageDisplay.texture.get_image()
   color.convert(Image.Format.FORMAT_RGB8)
-  var color_pixels: PackedByteArray = $GridContainer/ImageDisplay.texture.get_image().get_data()
+  var color_pixels: PackedByteArray = (
+    $GridContainer/ImageDisplay.texture.get_image().get_data()
+  )
   var grey: Image = $GridContainer/ImageDisplay.texture.get_image()
   grey.convert(Image.Format.FORMAT_L8)
   var grey_pix := grey.get_data()
@@ -69,7 +86,7 @@ func _on_shrink_button_pressed() -> void:
     temp.resize(w)
     var output_bytes := temp.to_byte_array()
     var pixel_floats := PackedFloat32Array()
-    pixel_floats.resize(w*2)
+    pixel_floats.resize(w * 2)
     var pixel_bytes := grey_pix.slice(y * w, (y + 2) * w)
     for i in range(pixel_floats.size()):
       pixel_floats[i] = pixel_bytes[i] + 0.0
@@ -80,17 +97,17 @@ func _on_shrink_button_pressed() -> void:
     var buffer := rd.storage_buffer_create(input_bytes.size(), input_bytes)
     var uniform := RDUniform.new()
     uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-    uniform.binding = 0 # this needs to match the "binding" in our shader file
+    uniform.binding = 0  # this needs to match the "binding" in our shader file
     uniform.add_id(buffer)
     var buffer2 := rd.storage_buffer_create(pixel_bytes.size(), pixel_bytes)
     var uniform2 := RDUniform.new()
     uniform2.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-    uniform2.binding = 1 # this needs to match the "binding" in our shader file
+    uniform2.binding = 1  # this needs to match the "binding" in our shader file
     uniform2.add_id(buffer2)
     var buffer3 := rd.storage_buffer_create(output_bytes.size(), output_bytes)
     var uniform3 := RDUniform.new()
     uniform3.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-    uniform3.binding = 2 # this needs to match the "binding" in our shader file
+    uniform3.binding = 2  # this needs to match the "binding" in our shader file
     uniform3.add_id(buffer3)
 
     var uniform_set := rd.uniform_set_create([uniform, uniform2, uniform3], shader, 0)
@@ -139,8 +156,6 @@ func _on_shrink_button_pressed() -> void:
 
   var new_img: PackedByteArray = PackedByteArray()
   for y in range(h):
-    if seam[y] == 0:
-      print("left")
     var start := y * w
     var seam_idx := start + seam[y]
     var end := start + w
@@ -157,7 +172,7 @@ func _on_shrink_button_pressed() -> void:
 
   if is_debug:
     var debug: PackedByteArray = PackedByteArray()
-    debug.resize(w*h)
+    debug.resize(w * h)
     var max_val: float = Array(diff_vals).max()
     for x in range(w):
       for y in range(h):
@@ -168,13 +183,18 @@ func _on_shrink_button_pressed() -> void:
           debug[i] = diff_vals[i] * 255 / max_val
 
     var d: Image = Image.create_from_data(w, h, false, Image.Format.FORMAT_L8, debug)
-    var dtex: ImageTexture = ImageTexture.create_from_image(d)  
+    var dtex: ImageTexture = ImageTexture.create_from_image(d)
     $GridContainer/DebugDisplay.texture = dtex
 
-
-  var img: Image = Image.create_from_data(w - 1, h, false, Image.Format.FORMAT_RGB8, new_img)
-  var itex: ImageTexture = ImageTexture.create_from_image(img)  
+  var img: Image = Image.create_from_data(
+    w - 1, h, false, Image.Format.FORMAT_RGB8, new_img
+  )
+  var itex: ImageTexture = ImageTexture.create_from_image(img)
   $GridContainer/ImageDisplay.texture = itex
+  var end_time := Time.get_ticks_msec()
+  print("Time taken: ", end_time - start_time)
+
 
 func _on_grow_button_pressed() -> void:
-    pass # Replace with function body.
+  pass  # Replace with function body.
+

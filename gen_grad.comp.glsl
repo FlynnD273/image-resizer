@@ -25,21 +25,12 @@ void main() {
     // gl_GlobalInvocationID.x uniquely identifies this invocation across all work groups
     int width = output_buf.data.length();
     uint x = gl_GlobalInvocationID.x;
-    float middle = 99999.;
-    middle = input_buf.data[x] + abs(pixel_buf.data[x + width] - pixel_buf.data[x]);
+    float middle = input_buf.data[x] + abs(pixel_buf.data[x + width] - pixel_buf.data[x]);
     float right = middle;
     float left = middle;
 
-    if (x == 0) {
-      right = input_buf.data[x + 1] + abs(pixel_buf.data[x + width] - pixel_buf.data[x + 1]);
-    }
-    else if (x == width - 1) {
-      left = input_buf.data[x - 1] + abs(pixel_buf.data[x + width] - pixel_buf.data[x - 1]);
-    }
-    else {
-      left = input_buf.data[x - 1] + abs(pixel_buf.data[x + width] - pixel_buf.data[x - 1]);
-      right = input_buf.data[x + 1] + abs(pixel_buf.data[x + width] - pixel_buf.data[x + 1]);
-    }
+    right = x != width - 1 ? input_buf.data[x + 1] + abs(pixel_buf.data[x + width] - pixel_buf.data[x + 1]) : right;
+    left = x != 0 ? input_buf.data[x - 1] + abs(pixel_buf.data[x + width] - pixel_buf.data[x - 1]) : left;
 
     output_buf.data[x] = min(left, min(middle, right));
 }
